@@ -167,9 +167,6 @@ def play_game():
         if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and player_x < WIDTH - player_width:
             player_x += player_speed
 
-        # Ensure player stays within screen boundaries
-        player_x = max(0, min(player_x, WIDTH - player_width))
-
         # Create Rocks Periodically
         if random.randint(1, 20) == 1:  # Adjust frequency by changing range
             rocksss.append(create_rock())
