@@ -9,20 +9,32 @@ pygame.init()
 pygame.mixer.init()
 
 # Load Sound Effect
-collision_sound = pygame.mixer.Sound("fein-meme-sound-effect.mp3")
+collision_sound = pygame.mixer.Sound("./sound effects/vine-boom.mp3")
 collision_sound.set_volume(0.5)  # Volume ranges from 0.0 to 1.0
 
 # Load Images
-player_image = pygame.image.load("nixonface.jpg")
-rock_image = pygame.image.load("the-rock.png")
+player_image = pygame.image.load("./images/nixonface.jpg")
+rock_image = pygame.image.load("./images/the-rock.png")
 
 # Resize Images
 player_image = pygame.transform.scale(player_image, (50, 50))
 rock_image = pygame.transform.scale(rock_image, (50, 50))
 
+# Load Main Menu Background Image
+menu_background = pygame.image.load("./images/lebron.jpg")
+menu_background = pygame.transform.scale(menu_background, (1200, 900))
+
 # Load Game Over Image
-game_over_image = pygame.image.load("kevin.jpg")  # Replace with your image file
-game_over_image = pygame.transform.scale(game_over_image, (600, 450))  # Scale as needed
+game_over_image = pygame.image.load("./images/the-rock-hungry.png")  
+game_over_image = pygame.transform.scale(game_over_image, (600, 450))  
+
+# Load and Resize Background Image
+background_image = pygame.image.load("./images/lebron2.jpg")  
+background_image = pygame.transform.scale(background_image, (1200, 900))  
+
+# Load and Resize Game Over Background Image
+game_over_background = pygame.image.load("./images/hell.jpg")  
+game_over_background = pygame.transform.scale(game_over_background, (1200, 900))  
 
 # Screen Dimensions
 WIDTH, HEIGHT = 1200, 900
@@ -34,6 +46,9 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
+GREEN = (0, 150, 0)
+YELLOW = (232, 162, 23)
+GRAY = (120, 120, 120)
 
 # Clock for FPS
 clock = pygame.time.Clock()
@@ -47,7 +62,7 @@ player_speed = 7
 # Rock Properties
 rock_width, rock_height = 50, 50
 rock_speed = 5
-rocks = []
+rocksss = []
 
 # Score
 score = 0
@@ -66,71 +81,143 @@ def draw_text(text, x, y, color=WHITE):
     label = font.render(text, True, color)
     screen.blit(label, (x, y))
 
-# Main Game Loop
-running = True
-while running:
-    screen.fill(BLACK)
+# Function for the main menu
+def main_menu():
+    global running, player_x, player_y, rocksss, score
+    menu_running = True
+    while menu_running:
+        screen.blit(menu_background, (0, 0))  # Draw the background
+        
+        # Game Title and Instructions
+        draw_text("Rock Falling Game", WIDTH // 2 - 150, HEIGHT // 2 - 100, WHITE)
+        draw_text("Press ENTER to Start", WIDTH // 2 - 150, HEIGHT // 2, BLUE)
+        draw_text("Press ESC to Quit", WIDTH // 2 - 150, HEIGHT // 2 + 50, RED)
 
-    # Event Handling
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+         # Movement Instructions
+        draw_text("Movement: Use Left/Right Arrow keys or A/D to move", WIDTH // 2 - 200, HEIGHT // 2 + 300, GREEN)
+        draw_text("Avoid falling rocks!", WIDTH // 2 - 150, HEIGHT // 2 + 350, GREEN)
 
-    # Player Movement
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT] and player_x > 0:
-        player_x -= player_speed
-    if keys[pygame.K_RIGHT] and player_x < WIDTH - player_width:
-        player_x += player_speed
+        pygame.display.flip() # Update display
 
-    # Create Rocks Periodically
-    if random.randint(1, 20) == 1:  # Adjust frequency by changing range
-        rocks.append(create_rock())
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN: # Start game on Enter key
+                    return  # Exit the menu and start the game
+                if event.key == pygame.K_ESCAPE: # Quit game on Escape key
+                    pygame.quit()
+                    sys.exit()
 
-    # Adjust rock speed based on score
-    rock_speed = 5 + (score // 100)  # Increase speed every 100 points
+# Function for the Game Over Screen
+def game_over_screen(score):
+    global running, player_x, player_y, rocksss
+    game_over_running = True
+    while game_over_running:
+        screen.blit(game_over_background, (0, 0))  # Draw the Game Over background
+        screen.blit(game_over_image, (WIDTH // 2 - 300, HEIGHT // 2 - 225))  # Center the Game Over image
+        draw_text("GAME OVER :(", WIDTH // 2 - 100, HEIGHT // 2, RED)
+        draw_text(f"Final Score: {score}", WIDTH // 2 - 150, HEIGHT // 2 + 50, BLUE)
+        draw_text("Press ENTER to return to Main Menu", WIDTH // 2 - 150, HEIGHT // 2 + 100, GREEN)
+        draw_text("Press ESC to Quit", WIDTH // 2 - 150, HEIGHT // 2 + 150, YELLOW)
 
-    # Move Rocks
-    for rock in rocks:
-        rock[1] += rock_speed # Move rock down
+        pygame.display.flip()  # Update the display
 
-    # Remove Rocks Out of Screen
-    rocks = [rock for rock in rocks if rock[1] < HEIGHT]
+        # Event Handling
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:  # Return to Main Menu
+                    game_over_running = False
+                    return  # End the game loop and go back to the main menu
+                if event.key == pygame.K_ESCAPE:  # Quit the game
+                    pygame.quit()
+                    sys.exit()
 
-    # Collision Detection
-    player_rect = player_image.get_rect(topleft=(player_x, player_y))
-    for rock in rocks:
-        rock_rect = rock_image.get_rect(topleft=(rock[0], rock[1]))
-        if player_rect.colliderect(rock_rect):
-            collision_sound.play(-1)  # Play the collision sound loop
-            running = False  # End game on collision
+# Function to run the main game loop
+def play_game():
+    global running, player_x, player_y, rocksss, score, rock_speed
 
-   # Draw Player
-    screen.blit(player_image, (player_x, player_y))
+    # Reset game variables
+    running = True
+    player_x, player_y = WIDTH // 2, HEIGHT - player_height - 10
+    rocksss.clear()
+    score = 0
+    rock_speed = 5
 
-    # Draw Rocks
-    for rock in rocks:
-        scaled_rock_image = pygame.transform.scale(rock_image, (rock[2], rock[3]))
-        screen.blit(scaled_rock_image, (rock[0], rock[1]))
+    while running:
+        screen.fill(BLACK)
 
-    # Update Score
-    score += 1
-    draw_text(f"Score: {score}", 10, 10)
+        # Draw Background
+        screen.blit(background_image, (0, 0))
 
-    # Update Display
-    pygame.display.flip()
+        # Event Handling
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
 
-    # Control FPS
-    clock.tick(FPS)
+        # Player Movement
+        keys = pygame.key.get_pressed()
+        if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and player_x > 0:
+            player_x -= player_speed
+        if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and player_x < WIDTH - player_width:
+            player_x += player_speed
 
-# Game Over Screen
-screen.fill(BLACK)
-screen.blit(game_over_image, (WIDTH // 2 - 300, HEIGHT // 2 - 225))  # Center the image
-draw_text("GAME OVER :(", WIDTH // 2 - 100, HEIGHT // 2, RED)
-draw_text(f"Final Score: {score}", WIDTH // 2 - 100, HEIGHT // 2 + 50, BLUE)
-pygame.display.flip()
-pygame.time.wait(5000)
+        # Ensure player stays within screen boundaries
+        player_x = max(0, min(player_x, WIDTH - player_width))
 
-# Quit Game
-pygame.quit()
-sys.exit() # Ensures script exits cleanly
+        # Create Rocks Periodically
+        if random.randint(1, 20) == 1:  # Adjust frequency by changing range
+            rocksss.append(create_rock())
+
+        # Adjust rock speed based on score
+        rock_speed = 5 + (score // 100)  # Increase speed every 100 points
+
+        # Move Rocks
+        for rock in rocksss:
+            rock[1] += rock_speed  # Move rock down
+
+        # Remove Rocks Out of Screen
+        rocksss = [rock for rock in rocksss if rock[1] < HEIGHT]
+
+        # Collision Detection
+        player_rect = player_image.get_rect(topleft=(player_x, player_y))
+        for rock in rocksss:
+            rock_rect = rock_image.get_rect(topleft=(rock[0], rock[1]))
+            if player_rect.colliderect(rock_rect):
+                collision_sound.play()  # Play the collision sound
+                running = False  # End game on collision
+
+        # Draw Player
+        screen.blit(player_image, (player_x, player_y))
+
+        # Draw Rocks
+        for rock in rocksss:
+            scaled_rock_image = pygame.transform.scale(rock_image, (rock[2], rock[3]))
+            screen.blit(scaled_rock_image, (rock[0], rock[1]))
+
+        # Update Score
+        score += 1
+        draw_text(f"Score: {score}", 10, 10)
+
+        # Update Display
+        pygame.display.flip()
+
+        # Control FPS
+        clock.tick(FPS)
+
+    # Call Game Over Screen
+    game_over_screen(score)
+
+# Main Program Execution
+def main():
+    while True:
+        main_menu()  # Display the main menu and wait for Enter
+        play_game()  # Start the gameplay after Enter is pressed
+
+# Call the main function to run the game
+main()
