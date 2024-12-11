@@ -8,9 +8,14 @@ pygame.init()
 # Initialize Pygame Mixer for Sounds
 pygame.mixer.init()
 
+# Load Background Music
+pygame.mixer.music.load("./sound effects/escape.mp3")
+pygame.mixer.music.set_volume(0.5)  # Set volume (0.0 to 1.0)
+
+
 # Load Sound Effect
 collision_sound = pygame.mixer.Sound("./sound effects/vine-boom.mp3")
-collision_sound.set_volume(0.5)  # Volume ranges from 0.0 to 1.0
+collision_sound.set_volume(0.5)  
 
 # Load Images
 player_image = pygame.image.load("./images/nixonface.jpg")
@@ -148,6 +153,9 @@ def play_game():
     score = 0
     rock_speed = 5
 
+# Start background music for gameplay
+    pygame.mixer.music.play(-1)  # Play the music infinitely (-1 for looping)
+
     while running:
         screen.fill(BLACK)
 
@@ -167,9 +175,9 @@ def play_game():
         if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and player_x < WIDTH - player_width:
             player_x += player_speed
 
-        # Create Rocks Periodically
-        if random.randint(1, 20) == 1:  # Adjust frequency by changing range
-            rocksss.append(create_rock())
+        # Create Rocks Periodically and More Frequently Based on Score
+        if random.randint(1, max(20 - score // 100,5)) == 1:  # Adjust frequency by changing range
+            rocksss.append(create_rock()) 
 
         # Adjust rock speed based on score
         rock_speed = 5 + (score // 100)  # Increase speed every 100 points
@@ -206,6 +214,9 @@ def play_game():
 
         # Control FPS
         clock.tick(FPS)
+
+    # Stop music when the game loop ends
+    pygame.mixer.music.stop()
 
     # Call Game Over Screen
     game_over_screen(score)
