@@ -1,6 +1,7 @@
 import pygame
 import random
 import sys
+import os
 
 # Initialize Pygame
 pygame.init()
@@ -10,12 +11,11 @@ pygame.mixer.init()
 
 # Load Background Music
 pygame.mixer.music.load("./sound effects/escape.mp3")
-pygame.mixer.music.set_volume(0.5)  # Set volume (0.0 to 1.0)
-
+pygame.mixer.music.set_volume(0.5)
 
 # Load Sound Effect
 collision_sound = pygame.mixer.Sound("./sound effects/vine-boom.mp3")
-collision_sound.set_volume(0.5)  
+collision_sound.set_volume(0.5)
 
 # Load Images
 player_image = pygame.image.load("./images/nixonface.jpg")
@@ -30,16 +30,16 @@ menu_background = pygame.image.load("./images/lebron.jpg")
 menu_background = pygame.transform.scale(menu_background, (1200, 900))
 
 # Load Game Over Image
-game_over_image = pygame.image.load("./images/the-rock-hungry.png")  
-game_over_image = pygame.transform.scale(game_over_image, (600, 450))  
+game_over_image = pygame.image.load("./images/the-rock-hungry.png")
+game_over_image = pygame.transform.scale(game_over_image, (600, 450))
 
 # Load and Resize Background Image
-background_image = pygame.image.load("./images/lebron2.jpg")  
-background_image = pygame.transform.scale(background_image, (1200, 900))  
+background_image = pygame.image.load("./images/lebron2.jpg")
+background_image = pygame.transform.scale(background_image, (1200, 900))
 
 # Load and Resize Game Over Background Image
-game_over_background = pygame.image.load("./images/hell.jpg")  
-game_over_background = pygame.transform.scale(game_over_background, (1200, 900))  
+game_over_background = pygame.image.load("./images/hell.jpg")
+game_over_background = pygame.transform.scale(game_over_background, (1200, 900))
 
 # Screen Dimensions
 WIDTH, HEIGHT = 1200, 900
@@ -73,6 +73,26 @@ rocksss = []
 score = 0
 font = pygame.font.Font(None, 36)
 
+# Leaderboard
+high_scores = []
+
+# Load High Scores from file
+def load_high_scores():
+    global high_scores
+    if os.path.exists("high_scores.txt"):
+        with open("high_scores.txt", "r") as file:
+            high_scores = [int(line.strip()) for line in file.readlines()]
+    else:
+        high_scores = []  # If file doesn't exist, initialize an empty leaderboard
+    print("Loaded high scores:", high_scores)  # Debug print
+    high_scores.sort(reverse=True)  # Sort in descending order to show highest scores first
+
+# Save High Scores to file
+def save_high_scores():
+    with open("high_scores.txt", "w") as file:
+        for score in high_scores:
+            file.write(f"{score}\n")
+
 # Function to create a rock
 def create_rock():
     x = random.randint(0, WIDTH - 50)  # Ensure rocks stay on screen
@@ -85,6 +105,28 @@ def create_rock():
 def draw_text(text, x, y, color=WHITE):
     label = font.render(text, True, color)
     screen.blit(label, (x, y))
+
+# Function to update leaderboard
+def update_leaderboard(score):
+    global high_scores
+
+    print(f"Adding score: {score}")  # Debug print
+
+    # Only update leaderboard if this is the first time it's called
+    if score not in high_scores:  # Ensure we are not duplicating scores
+        # Add the new score to the list
+        high_scores.append(score)
+        
+        # Sort the scores in descending order (highest score first)
+        high_scores.sort(reverse=True)
+        
+        # Keep only the top 5 scores
+        high_scores = high_scores[:5]
+        
+        print(f"Updated high scores: {high_scores}")  # Debug print
+
+        # Save the updated leaderboard to the file
+        save_high_scores()
 
 # Function for the main menu
 def main_menu():
@@ -119,6 +161,10 @@ def main_menu():
 def game_over_screen(score):
     global running, player_x, player_y, rocksss
     game_over_running = True
+
+    # Update leaderboard before entering the event loop
+    update_leaderboard(score)
+
     while game_over_running:
         screen.blit(game_over_background, (0, 0))  # Draw the Game Over background
         screen.blit(game_over_image, (WIDTH // 2 - 300, HEIGHT // 2 - 225))  # Center the Game Over image
@@ -126,6 +172,11 @@ def game_over_screen(score):
         draw_text(f"Final Score: {score}", WIDTH // 2 - 150, HEIGHT // 2 + 50, BLUE)
         draw_text("Press ENTER to return to Main Menu", WIDTH // 2 - 150, HEIGHT // 2 + 100, GREEN)
         draw_text("Press ESC to Quit", WIDTH // 2 - 150, HEIGHT // 2 + 150, YELLOW)
+        
+        # Display Leaderboard in the top-right corner
+        draw_text("Leaderboard", WIDTH - 200, 50, YELLOW)  # Set "Leaderboard" label
+        for i, high_score in enumerate(high_scores):
+            draw_text(f"{i + 1}. {high_score}", WIDTH - 200, 100 + i * 40, WHITE)  # Display high scores
 
         pygame.display.flip()  # Update the display
 
@@ -136,8 +187,7 @@ def game_over_screen(score):
                 sys.exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:  # Return to Main Menu
-                    game_over_running = False
-                    return  # End the game loop and go back to the main menu
+                    game_over_running = False  # Exit game over loop
                 if event.key == pygame.K_ESCAPE:  # Quit the game
                     pygame.quit()
                     sys.exit()
@@ -152,9 +202,6 @@ def play_game():
     rocksss.clear()
     score = 0
     rock_speed = 5
-
-# Start background music for gameplay
-    pygame.mixer.music.play(-1)  # Play the music infinitely (-1 for looping)
 
     while running:
         screen.fill(BLACK)
@@ -175,16 +222,16 @@ def play_game():
         if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and player_x < WIDTH - player_width:
             player_x += player_speed
 
-        # Create Rocks Periodically and More Frequently Based on Score
-        if random.randint(1, max(20 - score // 100,5)) == 1:  # Adjust frequency by changing range
-            rocksss.append(create_rock()) 
+        # Create Rocks Periodically
+        if random.randint(1, max(20 - score // 100, 5)) == 1:
+            rocksss.append(create_rock())
 
         # Adjust rock speed based on score
         rock_speed = 5 + (score // 100)  # Increase speed every 100 points
 
         # Move Rocks
         for rock in rocksss:
-            rock[1] += rock_speed  # Move rock down
+            rock[1] += rock_speed
 
         # Remove Rocks Out of Screen
         rocksss = [rock for rock in rocksss if rock[1] < HEIGHT]
@@ -194,7 +241,7 @@ def play_game():
         for rock in rocksss:
             rock_rect = rock_image.get_rect(topleft=(rock[0], rock[1]))
             if player_rect.colliderect(rock_rect):
-                collision_sound.play()  # Play the collision sound
+                collision_sound.play()
                 running = False  # End game on collision
 
         # Draw Player
@@ -215,17 +262,15 @@ def play_game():
         # Control FPS
         clock.tick(FPS)
 
-    # Stop music when the game loop ends
-    pygame.mixer.music.stop()
-
     # Call Game Over Screen
     game_over_screen(score)
 
 # Main Program Execution
 def main():
+    load_high_scores()  # Load high scores at the start
     while True:
-        main_menu()  # Display the main menu and wait for Enter
-        play_game()  # Start the gameplay after Enter is pressed
+        main_menu()
+        play_game()       
 
 # Call the main function to run the game
 main()
