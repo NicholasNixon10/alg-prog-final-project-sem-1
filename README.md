@@ -18,7 +18,8 @@ This is a simple 2D game created using **Pygame** where you control a player cha
 - **Pygame** library. You can install it using pip:
   ```
   pip install pygame
-Files
+
+## Files
 The game requires several files for images, sounds, and music. Here's a breakdown of the file structure:
 
 ``` 
