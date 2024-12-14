@@ -203,6 +203,9 @@ def play_game():
     score = 0
     rock_speed = 5
 
+    # Play background music
+    pygame.mixer.music.play()
+
     while running:
         screen.fill(BLACK)
 
@@ -261,6 +264,9 @@ def play_game():
 
         # Control FPS
         clock.tick(FPS)
+
+     # Stop the background music
+    pygame.mixer.music.stop()
 
     # Call Game Over Screen
     game_over_screen(score)
